@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = "docker.io/ton-user-dockerhub"   // remplace par ton vrai registry
+        DOCKER_IMAGE = "tebraouisamy/presence-frontend"
         DOCKER_CREDENTIALS_ID = "docker-credentials"
         KUBECONFIG_ID = "kubeconfig"
         NAMESPACE = "presence-app"
@@ -15,7 +15,7 @@ pipeline {
             }
         }
 
-        stage('Install & Build') {
+        stage('Install Frontend & Build') {
             steps {
                 sh 'npm install --legacy-peer-deps'
                 sh 'npm run build'
@@ -24,14 +24,14 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh 'npm test || true' // éviter que ça bloque tout le pipeline en cas de warning
+                sh 'npm test || true'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${DOCKER_REGISTRY}/presence-frontend:${BUILD_NUMBER}")
+                    docker.build("${DOCKER_IMAGE}:${BUILD_NUMBER}")
                 }
             }
         }
@@ -39,8 +39,8 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry("https://${DOCKER_REGISTRY}", "${DOCKER_CREDENTIALS_ID}") {
-                        docker.image("${DOCKER_REGISTRY}/presence-frontend:${BUILD_NUMBER}").push()
+                    docker.withRegistry("https://index.docker.io/v1/", "${DOCKER_CREDENTIALS_ID}") {
+                        docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}").push()
                     }
                 }
             }
@@ -68,11 +68,9 @@ pipeline {
     post {
         success {
             echo '✅ Déploiement réussi !'
-            // slackSend(...) supprimé car plugin non installé
         }
         failure {
             echo '❌ Échec du déploiement.'
-            // slackSend(...) supprimé car plugin non installé
         }
     }
 }
