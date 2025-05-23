@@ -49,7 +49,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([credentialsId: "${KUBECONFIG_ID}"]) {
-                    sh "envsubst < kubernetes/frontend-deployment.yaml | kubectl apply -f -"
+                    sh "cat kubernetes/frontend-deployment.yaml | envsubst | kubectl apply -f -"
                     sh "kubectl apply -f kubernetes/frontend-service.yaml"
                     sh "kubectl apply -f kubernetes/ingress.yaml"
                 }
