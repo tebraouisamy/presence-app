@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ${DOCKER_REGISTRY}/presence-frontend:${BUILD_NUMBER}
+        image: tebraouisamy/presence-frontend:33  # ✅ image correctement référencée
         ports:
         - containerPort: 3000
         resources:
