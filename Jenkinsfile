@@ -7,7 +7,7 @@ pipeline {
         KUBECONFIG_ID = "kubeconfig"
         NAMESPACE = "presence-app"
 
-        // Ajouts importants pour éviter SIGBUS
+        // ⚠️ Variables pour éviter crash SIGBUS
         NEXT_TELEMETRY_DISABLED = '1'
         NEXT_CACHE_DIR = '.next-cache'
         NODE_OPTIONS = '--max-old-space-size=2048'
@@ -20,20 +20,40 @@ pipeline {
             }
         }
 
-        stage('Install Frontend & Build') {
+        stage('Clean & Prepare Workspace') {
             steps {
                 sh '''
+                    echo "🧹 Nettoyage du cache local"
+                    rm -rf node_modules .next .next-cache package-lock.json
+                    npm cache clean --force || true
                     mkdir -p .next-cache
                     chmod -R 777 .next-cache
-                    npm install --legacy-peer-deps
-                    npm run build
                 '''
+            }
+        }
+
+        stage('Install Frontend & Build') {
+            steps {
+                script {
+                    try {
+                        sh 'npm install --legacy-peer-deps'
+                        sh 'npm run build'
+                    } catch (e) {
+                        error "🚨 Erreur lors du build frontend : ${e}"
+                    }
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'npm test || true'
+                script {
+                    try {
+                        sh 'npm test'
+                    } catch (e) {
+                        echo "⚠️ Tests échoués, mais pipeline continue."
+                    }
+                }
             }
         }
 
@@ -58,9 +78,12 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([credentialsId: "${KUBECONFIG_ID}"]) {
-                    sh "cat kubernetes/frontend-deployment.yaml | envsubst | kubectl apply -f -"
-                    sh "kubectl apply -f kubernetes/frontend-service.yaml"
-                    sh "kubectl apply -f kubernetes/ingress.yaml"
+                    sh '''
+                        echo "🚀 Déploiement Kubernetes..."
+                        cat kubernetes/frontend-deployment.yaml | envsubst | kubectl apply -f -
+                        kubectl apply -f kubernetes/frontend-service.yaml
+                        kubectl apply -f kubernetes/ingress.yaml
+                    '''
                 }
             }
         }
@@ -80,6 +103,9 @@ pipeline {
         }
         failure {
             echo '❌ Échec du déploiement.'
+        }
+        always {
+            echo '📝 Pipeline terminé.'
         }
     }
 }
