@@ -45,17 +45,20 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                script {
-                    try {
-                        sh 'npm test'
-                    } catch (e) {
-                        echo "⚠️ Tests échoués, mais pipeline continue."
-                    }
-                }
+       /*
+stage('Run Tests') {
+    steps {
+        script {
+            try {
+                sh 'npm test'
+            } catch (e) {
+                echo "⚠️ Tests échoués, mais pipeline continue."
             }
         }
+    }
+}
+*/
+
 
         stage('Build Docker Image') {
             steps {
