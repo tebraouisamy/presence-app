@@ -6,6 +6,11 @@ pipeline {
         DOCKER_CREDENTIALS_ID = "docker-credentials"
         KUBECONFIG_ID = "kubeconfig"
         NAMESPACE = "presence-app"
+
+        // Ajouts importants pour éviter SIGBUS
+        NEXT_TELEMETRY_DISABLED = '1'
+        NEXT_CACHE_DIR = '.next-cache'
+        NODE_OPTIONS = '--max-old-space-size=2048'
     }
 
     stages {
@@ -17,8 +22,12 @@ pipeline {
 
         stage('Install Frontend & Build') {
             steps {
-                sh 'npm install --legacy-peer-deps'
-                sh 'npm run build'
+                sh '''
+                    mkdir -p .next-cache
+                    chmod -R 777 .next-cache
+                    npm install --legacy-peer-deps
+                    npm run build
+                '''
             }
         }
 
